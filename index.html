@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aual Baru Stock</title>
+    
+    <!-- PWA Requirements -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#792C82">
+    <link rel="apple-touch-icon" href="./img/Asset 2.png">
+
+    <!-- Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <style>
+        .tab-active { border-bottom: 3px solid #B5FF4A; color: #B5FF4A; font-weight: bold; }
+        .tab-inactive { color: #e5b3ee; border-bottom: 1px solid #9d4b9f; }
+        .hidden { display: none !important; }
+        .bg-primary { background-color: #792C82; }
+        .bg-accent { background-color: #B5FF4A; }
+        .text-primary { color: #792C82; }
+        .text-accent { color: #B5FF4A; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+
+    <div class="max-w-5xl mx-auto bg-white min-h-screen shadow-2xl">
+        
+        <!-- Header & Summary -->
+        <div class="p-5 bg-primary text-white">
+            <div class="flex items-center justify-center space-x-3 mb-4">
+                <img src="./img/Asset 2.png" alt="Logo Aual Baru" class="w-12 h-12 object-contain bg-white p-1 rounded-lg">
+                <h1 class="text-2xl md:text-3xl font-bold">Aual Baru Stock</h1>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div class="bg-white/20 p-3 rounded-lg text-center backdrop-blur-sm border border-white/30">
+                    <p class="text-xs text-accent font-semibold uppercase tracking-wider">Total Barang</p>
+                    <p class="font-bold text-2xl" id="sum-total">0</p>
+                </div>
+                <div class="bg-white/20 p-3 rounded-lg text-center backdrop-blur-sm border border-white/30">
+                    <p class="text-xs text-accent font-semibold uppercase tracking-wider">Terjual</p>
+                    <p class="font-bold text-2xl" id="sum-sold">0</p>
+                </div>
+                <div class="bg-white/20 p-3 rounded-lg text-center backdrop-blur-sm border border-white/30">
+                    <p class="text-xs text-accent font-semibold uppercase tracking-wider">Stok Sendiri (OR)</p>
+                    <p class="font-bold text-2xl" id="sum-or">0</p>
+                </div>
+                <div class="bg-white/20 p-3 rounded-lg text-center backdrop-blur-sm border border-white/30">
+                    <p class="text-xs text-accent font-semibold uppercase tracking-wider">Titipan (TP)</p>
+                    <p class="font-bold text-2xl" id="sum-tp">0</p>
+                </div>
+            </div>
+            
+            <!-- Tombol Aksi Database -->
+            <div class="flex flex-col md:flex-row gap-2 mt-4">
+                <button onclick="exportToExcel()" class="flex-1 bg-accent hover:bg-[#9de535] text-gray-900 py-2 px-4 rounded-lg font-bold text-sm transition shadow-lg">
+                    📥 Download Excel
+                </button>
+                <button onclick="backupJSON()" class="flex-1 bg-white/20 hover:bg-white/30 text-white py-2 px-4 rounded-lg font-bold text-sm border border-white/40 transition">
+                    💾 Backup JSON
+                </button>
+                <button onclick="document.getElementById('file-import').click()" class="flex-1 bg-white/20 hover:bg-white/30 text-white py-2 px-4 rounded-lg font-bold text-sm border border-white/40 transition">
+                    📂 Import JSON
+                </button>
+                <input type="file" id="file-import" accept=".json" class="hidden" onchange="importJSON(event)">
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex border-b bg-primary text-center text-sm md:text-base font-semibold">
+            <div id="tab-masuk" class="w-1/2 p-3 cursor-pointer tab-active transition" onclick="switchTab('masuk')">Barang Masuk</div>
+            <div id="tab-keluar" class="w-1/2 p-3 cursor-pointer tab-inactive transition hover:text-white" onclick="switchTab('keluar')">Barang Keluar</div>
+        </div>
+
+        <!-- Content: Barang Masuk -->
+        <div id="content-masuk" class="p-4 md:p-6">
+            <button onclick="bukaModalTambah()" class="w-full bg-accent hover:bg-[#9de535] text-gray-900 font-bold py-3 md:py-4 rounded-xl shadow-md mb-6 transition text-lg">
+                + Tambah Barang Baru
+            </button>
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2">
+                <h2 class="font-bold text-xl text-primary">Database Barang</h2>
+                <select id="filter-masuk" onchange="renderList()" class="border-2 border-primary text-sm p-2 rounded-lg bg-gray-50 focus:outline-none w-full md:w-auto">
+                    <option value="all">Tampilkan Semua</option>
+                    <option value="ready">Ready Stok</option>
+                    <option value="sold">Terjual</option>
+                </select>
+            </div>
+            
+            <!-- Grid Container for Items -->
+            <div id="list-masuk" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </div>
+
+        <!-- Content: Barang Keluar -->
+        <div id="content-keluar" class="p-4 md:p-6 hidden">
+            <div class="bg-primary/5 p-4 rounded-xl mb-6 border border-primary/20 max-w-xl mx-auto">
+                <h3 class="font-bold text-lg text-primary text-center mb-3">Scan OCR Kode Barang</h3>
+                <video id="video-preview" class="w-full h-64 bg-black rounded-lg mb-3 hidden object-cover" autoplay playsinline></video>
+                <button id="btn-start-scan" onclick="startCamera()" class="bg-primary hover:bg-[#5e2166] text-white px-4 py-3 rounded-lg text-sm font-bold w-full mb-3 shadow-lg transition">📷 Buka Kamera Scanner</button>
+                <button id="btn-capture" onclick="scanOCR()" class="bg-accent hover:bg-[#9de535] text-gray-900 px-4 py-3 rounded-lg text-sm font-bold w-full hidden shadow-lg transition">🔍 Scan Gambar</button>
+                <p id="ocr-status" class="text-xs font-semibold text-center text-primary mt-1 h-4"></p>
+                
+                <div class="mt-4 pt-4 border-t border-primary/20 relative">
+                    <p class="text-xs font-bold text-primary mb-2">Atau input kode manual:</p>
+                    <div class="flex gap-2">
+                        <input type="text" id="manual-code" placeholder="Ketik kode (misal: OR-BJU)" onkeyup="showSuggestions(this.value)" class="border-2 border-gray-300 focus:border-primary p-2 w-full rounded-lg text-sm uppercase outline-none font-bold">
+                        <button onclick="processCode(document.getElementById('manual-code').value.toUpperCase())" class="bg-primary text-white px-4 py-2 rounded-lg font-bold text-sm shadow-md hover:bg-[#5e2166] transition">Cari</button>
+                    </div>
+                    <!-- Autocomplete Dropdown -->
+                    <div id="suggestions" class="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-xl mt-1 max-h-48 overflow-y-auto hidden"></div>
+                </div>
+            </div>
+
+            <h2 class="font-bold text-xl text-primary mb-4">Riwayat Barang Keluar</h2>
+            <div id="list-keluar" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </div>
+    </div>
+
+    <!-- Modal Form (Tambah/Edit) -->
+    <div id="modal-form" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md max-h-[95vh] overflow-y-auto shadow-2xl">
+            <h2 id="modal-title" class="font-bold text-2xl text-primary mb-5 border-b pb-2">Tambah Barang</h2>
+            <input type="hidden" id="edit-id">
+            <div class="space-y-4 text-sm">
+                <div>
+                    <label class="block mb-1 font-bold text-gray-700">Foto Barang</label>
+                    <input type="file" id="input-foto" accept="image/*" class="w-full border-2 border-gray-200 p-2 rounded-lg text-xs focus:border-primary outline-none" onchange="compressImage(event)">
+                    <img id="preview-foto" class="mt-3 w-full h-40 object-cover rounded-lg hidden border border-gray-200">
+                    <input type="hidden" id="foto-base64">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block mb-1 font-bold text-gray-700">Kategori</label>
+                        <select id="input-kategori" class="w-full border-2 border-gray-200 p-2 rounded-lg focus:border-primary outline-none bg-white">
+                            <option value="OR">Stok Sendiri (OR)</option>
+                            <option value="TP">Titipan (TP)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block mb-1 font-bold text-gray-700">Jenis Barang</label>
+                        <select id="input-jenis" class="w-full border-2 border-gray-200 p-2 rounded-lg focus:border-primary outline-none bg-white">
+                            <option value="BJU">Baju</option>
+                            <option value="CLN">Celana</option>
+                            <option value="JKT">Jaket</option>
+                            <option value="TAS">Tas</option>
+                            <option value="JLB">Jilbab</option>
+                            <option value="AKS">Aksesoris</option>
+                            <option value="MNN">Mainan</option>
+                            <option value="HSW">Houseware</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block mb-1 font-bold text-gray-700">Harga (Rp)</label>
+                    <input type="number" id="input-harga" class="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-primary outline-none text-lg font-bold" placeholder="Contoh: 50000">
+                </div>
+                <div>
+                    <label class="block mb-1 font-bold text-gray-700">Keterangan (Opsional)</label>
+                    <textarea id="input-keterangan" rows="2" class="w-full border-2 border-gray-200 p-2 rounded-lg focus:border-primary outline-none" placeholder="Merk, ukuran, warna..."></textarea>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="tutupModalForm()" class="w-1/3 bg-gray-200 hover:bg-gray-300 text-gray-800 p-3 rounded-lg font-bold transition">Batal</button>
+                <button onclick="simpanBarang()" class="w-2/3 bg-primary hover:bg-[#5e2166] text-white p-3 rounded-lg font-bold shadow-lg transition text-lg">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Terjual -->
+    <div id="modal-terjual" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl border-t-8 border-accent">
+            <h2 class="font-bold text-2xl mb-1 text-primary">Konfirmasi</h2>
+            <p class="text-sm text-gray-500 mb-4">Tandai barang ini sebagai terjual?</p>
+            
+            <img id="konfirm-foto" class="w-40 h-40 object-cover mx-auto rounded-xl mb-4 border-2 border-gray-100 shadow-sm">
+            <h3 id="konfirm-kode" class="font-black text-2xl text-primary bg-primary/10 py-1 rounded-lg"></h3>
+            
+            <div id="konfirm-detail" class="text-gray-700 text-sm my-4 bg-gray-50 p-3 rounded-lg border text-left"></div>
+            
+            <div class="flex gap-3 mt-2">
+                <button onclick="document.getElementById('modal-terjual').classList.add('hidden')" class="w-1/2 bg-gray-200 hover:bg-gray-300 p-3 rounded-xl font-bold transition">Batal</button>
+                <button id="btn-konfirm-jual" class="w-1/2 bg-accent hover:bg-[#9de535] text-gray-900 p-3 rounded-xl font-black shadow-lg transition text-lg">Ya, Terjual!</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Registrasi Service Worker PWA ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW terdaftar', err));
+            });
+        }
+
+        // --- Variabel Global & IndexedDB Setup ---
+        let localDbCache = []; 
+        let videoStream = null;
+        let db;
+
+        const request = indexedDB.open("AualStockDB", 1);
+
+        request.onupgradeneeded = function(event) {
+            db = event.target.result;
+            if (!db.objectStoreNames.contains("barang")) {
+                db.createObjectStore("barang", { keyPath: "id" });
+            }
+        };
+
+        request.onsuccess = function(event) {
+            db = event.target.result;
+            loadDataFromDB();
+        };
+
+        request.onerror = function(event) {
+            console.error("IndexedDB Error:", event.target.errorCode);
+            alert("Browser Anda tidak mendukung IndexedDB. Data tidak bisa disimpan permanen.");
+        };
+
+        // --- Fungsi Database Core ---
+        function loadDataFromDB() {
+            const transaction = db.transaction(["barang"], "readonly");
+            const store = transaction.objectStore("barang");
+            const getAllRequest = store.getAll();
+
+            getAllRequest.onsuccess = function() {
+                localDbCache = getAllRequest.result;
+                
+                // Migrasi otomatis dari localStorage jika ada dan IndexedDB kosong
+                const oldData = localStorage.getItem('aual_db');
+                if (localDbCache.length === 0 && oldData) {
+                    const parsedData = JSON.parse(oldData);
+                    const writeTx = db.transaction(["barang"], "readwrite");
+                    const writeStore = writeTx.objectStore("barang");
+                    parsedData.forEach(item => writeStore.add(item));
+                    
+                    writeTx.oncomplete = function() {
+                        localDbCache = parsedData;
+                        localStorage.removeItem('aual_db'); // Hapus data lama agar memori lega
+                        refreshUI();
+                    };
+                } else {
+                    refreshUI();
+                }
+            };
+        }
+
+        function saveItemToDB(item, isUpdate = false) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(["barang"], "readwrite");
+                const store = transaction.objectStore("barang");
+                const req = isUpdate ? store.put(item) : store.add(item);
+                
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        function clearAllDB() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(["barang"], "readwrite");
+                const store = transaction.objectStore("barang");
+                const req = store.clear();
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject();
+            });
+        }
+
+        // --- UI & Rendering ---
+        function refreshUI() {
+            updateSummary();
+            renderList();
+            renderKeluar();
+        }
+
+        function updateSummary() {
+            document.getElementById('sum-total').innerText = localDbCache.length;
+            document.getElementById('sum-sold').innerText = localDbCache.filter(i => i.status === 'Terjual').length;
+            document.getElementById('sum-or').innerText = localDbCache.filter(i => i.kategori === 'OR').length;
+            document.getElementById('sum-tp').innerText = localDbCache.filter(i => i.kategori === 'TP').length;
+        }
+
+        function switchTab(tab) {
+            const isMasuk = tab === 'masuk';
+            document.getElementById('tab-masuk').className = `w-1/2 p-3 cursor-pointer transition ${isMasuk ? 'tab-active' : 'tab-inactive hover:text-white'}`;
+            document.getElementById('tab-keluar').className = `w-1/2 p-3 cursor-pointer transition ${!isMasuk ? 'tab-active' : 'tab-inactive hover:text-white'}`;
+            
+            document.getElementById('content-masuk').classList.toggle('hidden', !isMasuk);
+            document.getElementById('content-keluar').classList.toggle('hidden', isMasuk);
+            
+            if(!isMasuk) renderKeluar(); else renderList();
+            if(isMasuk && videoStream) stopCamera();
+        }
+
+        function formatRupiah(angka) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(angka);
+        }
+
+        // --- Fitur CRUD Barang ---
+        function compressImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = function (e) {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = function () {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800; // Optimal untuk kualitas dan ukuran
+                    const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    const base64 = canvas.toDataURL('image/jpeg', 0.6);
+                    document.getElementById('foto-base64').value = base64;
+                    const preview = document.getElementById('preview-foto');
+                    preview.src = base64;
+                    preview.classList.remove('hidden');
+                }
+            };
+        }
+
+        function bukaModalTambah() {
+            document.getElementById('modal-title').innerText = "Tambah Barang Baru";
+            document.getElementById('edit-id').value = "";
+            document.getElementById('input-foto').value = "";
+            document.getElementById('foto-base64').value = "";
+            document.getElementById('preview-foto').classList.add('hidden');
+            document.getElementById('input-harga').value = "";
+            document.getElementById('input-keterangan').value = "";
+            document.getElementById('modal-form').classList.remove('hidden');
+        }
+
+        function bukaModalEdit(id) {
+            const item = localDbCache.find(i => i.id === id);
+            if(!item) return;
+            
+            document.getElementById('modal-title').innerText = "Edit Barang: " + item.kode;
+            document.getElementById('edit-id').value = item.id;
+            document.getElementById('foto-base64').value = item.foto;
+            
+            const preview = document.getElementById('preview-foto');
+            preview.src = item.foto;
+            preview.classList.remove('hidden');
+            
+            document.getElementById('input-kategori').value = item.kategori;
+            document.getElementById('input-jenis').value = item.jenis;
+            document.getElementById('input-harga').value = item.harga;
+            document.getElementById('input-keterangan').value = item.keterangan || "";
+            
+            document.getElementById('modal-form').classList.remove('hidden');
+        }
+
+        function tutupModalForm() {
+            document.getElementById('modal-form').classList.add('hidden');
+        }
+
+        function generateKode(kat, jenis) {
+            const prefix = `${kat}-${jenis}-`;
+            const similarItems = localDbCache.filter(i => i.kode.startsWith(prefix));
+            let maxCount = 0;
+            similarItems.forEach(i => {
+                const num = parseInt(i.kode.split('-')[2]);
+                if(num > maxCount) maxCount = num;
+            });
+            return prefix + (maxCount + 1).toString().padStart(3, '0');
+        }
+
+        async function simpanBarang() {
+            const idEdit = document.getElementById('edit-id').value;
+            const foto = document.getElementById('foto-base64').value;
+            const kat = document.getElementById('input-kategori').value;
+            const jenis = document.getElementById('input-jenis').value;
+            const harga = document.getElementById('input-harga').value;
+            const ket = document.getElementById('input-keterangan').value;
+
+            if(!foto || !harga) return alert("Foto dan Harga wajib diisi!");
+
+            if(idEdit) {
+                // Proses Edit
+                const index = localDbCache.findIndex(i => i.id == idEdit);
+                if(index > -1) {
+                    let updatedItem = { ...localDbCache[index] };
+                    updatedItem.foto = foto;
+                    updatedItem.harga = parseInt(harga);
+                    updatedItem.keterangan = ket;
+                    // Note: Kategori/Jenis diedit tidak merubah kode agar history konsisten.
+                    
+                    await saveItemToDB(updatedItem, true);
+                    localDbCache[index] = updatedItem;
+                    alert("Perubahan berhasil disimpan.");
+                }
+            } else {
+                // Proses Tambah Baru
+                const kode = generateKode(kat, jenis);
+                const newItem = {
+                    id: Date.now(),
+                    kode: kode,
+                    kategori: kat,
+                    jenis: jenis,
+                    harga: parseInt(harga),
+                    keterangan: ket,
+                    foto: foto,
+                    status: 'Ready',
+                    tanggal: new Date().toLocaleDateString('id-ID')
+                };
+
+                await saveItemToDB(newItem);
+                localDbCache.push(newItem);
+                alert(`Barang tersimpan dengan kode:\n${kode}`);
+            }
+            
+            tutupModalForm();
+            refreshUI();
+        }
+
+        function renderList() {
+            const filter = document.getElementById('filter-masuk').value;
+            const container = document.getElementById('list-masuk');
+            container.innerHTML = '';
+            
+            let filteredDb = localDbCache.slice().reverse();
+            if(filter === 'ready') filteredDb = filteredDb.filter(i => i.status === 'Ready');
+            if(filter === 'sold') filteredDb = filteredDb.filter(i => i.status === 'Terjual');
+
+            filteredDb.forEach(item => {
+                const isSold = item.status === 'Terjual';
+                container.innerHTML += `
+                    <div class="flex flex-col bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition overflow-hidden ${isSold ? 'opacity-70 grayscale-[30%]' : ''}">
+                        <div class="relative h-48 bg-gray-100">
+                            <img src="${item.foto}" class="w-full h-full object-cover">
+                            <div class="absolute top-2 right-2 px-2 py-1 rounded text-xs font-bold shadow-sm ${isSold ? 'bg-red-500 text-white' : 'bg-accent text-gray-900'}">
+                                ${item.status}
+                            </div>
+                        </div>
+                        <div class="p-3">
+                            <div class="flex justify-between items-start mb-1">
+                                <div>
+                                    <p class="font-black text-lg text-primary">${item.kode}</p>
+                                    <p class="text-xs text-gray-500 font-semibold">${item.kategori} - ${item.jenis}</p>
+                                </div>
+                                <p class="text-sm font-bold bg-gray-100 px-2 py-1 rounded text-gray-800">${formatRupiah(item.harga)}</p>
+                            </div>
+                            ${item.keterangan ? `<p class="text-xs text-gray-500 italic truncate mb-2">${item.keterangan}</p>` : '<div class="h-4 mb-2"></div>'}
+                            
+                            <div class="border-t pt-2 flex justify-between">
+                                <p class="text-[10px] text-gray-400">In: ${item.tanggal}</p>
+                                ${!isSold ? `<button onclick="bukaModalEdit(${item.id})" class="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1">✏️ Edit</button>` : `<p class="text-[10px] text-red-500 font-bold">Out: ${item.tanggal_terjual}</p>`}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- Fitur Barang Keluar (OCR, Autocomplete, Jual) ---
+        function showSuggestions(val) {
+            const container = document.getElementById('suggestions');
+            container.innerHTML = '';
+            val = val.toUpperCase().trim();
+            if (!val) {
+                container.classList.add('hidden');
+                return;
+            }
+            
+            // Filter hanya yang ready dan mirip dengan inputan
+            const matches = localDbCache.filter(i => i.status === 'Ready' && i.kode.includes(val));
+            
+            if (matches.length > 0) {
+                matches.forEach(m => {
+                    const div = document.createElement('div');
+                    div.className = 'p-3 border-b hover:bg-gray-100 cursor-pointer flex justify-between items-center transition';
+                    div.innerHTML = `
+                        <div>
+                            <span class="font-bold text-primary">${m.kode}</span>
+                            <span class="text-xs text-gray-500 ml-2">${m.jenis}</span>
+                        </div>
+                        <span class="text-xs font-bold">${formatRupiah(m.harga)}</span>
+                    `;
+                    div.onclick = () => {
+                        document.getElementById('manual-code').value = m.kode;
+                        container.classList.add('hidden');
+                        processCode(m.kode);
+                    };
+                    container.appendChild(div);
+                });
+                container.classList.remove('hidden');
+            } else {
+                container.innerHTML = '<div class="p-3 text-sm text-gray-500 text-center italic">Tidak ada stok ready yang cocok.</div>';
+                container.classList.remove('hidden');
+            }
+        }
+
+        // Tutup autocomplete jika klik di luar
+        document.addEventListener('click', function(e) {
+            if(e.target.id !== 'manual-code') {
+                document.getElementById('suggestions').classList.add('hidden');
+            }
+        });
+
+        async function startCamera() {
+            const video = document.getElementById('video-preview');
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                video.srcObject = videoStream;
+                video.classList.remove('hidden');
+                document.getElementById('btn-start-scan').classList.add('hidden');
+                document.getElementById('btn-capture').classList.remove('hidden');
+                document.getElementById('ocr-status').innerText = "Arahkan ke kode, pastikan fokus, lalu Scan.";
+            } catch (err) {
+                alert("Kamera tidak bisa diakses. Pastikan menggunakan link HTTPS (GitHub) atau localhost.");
+            }
+        }
+
+        function stopCamera() {
+            if(videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            document.getElementById('video-preview').classList.add('hidden');
+            document.getElementById('btn-start-scan').classList.remove('hidden');
+            document.getElementById('btn-capture').classList.add('hidden');
+            document.getElementById('ocr-status').innerText = "";
+        }
+
+        async function scanOCR() {
+            const video = document.getElementById('video-preview');
+            const statusText = document.getElementById('ocr-status');
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            statusText.innerText = "⏳ Sedang membaca teks... mohon tunggu.";
+            
+            try {
+                const result = await Tesseract.recognize(canvas.toDataURL('image/jpeg'), 'eng');
+                const text = result.data.text;
+                
+                const match = text.match(/(OR|TP)-[A-Z]{3}-\d{3}/i);
+                
+                if(match) {
+                    statusText.innerText = `✅ Terbaca: ${match[0].toUpperCase()}`;
+                    stopCamera();
+                    processCode(match[0].toUpperCase());
+                } else {
+                    statusText.innerText = "❌ Kode tidak ditemukan/buram. Coba input manual.";
+                }
+            } catch (error) {
+                statusText.innerText = "Error memproses gambar.";
+            }
+        }
+
+        function processCode(kodeInput) {
+            if(!kodeInput) return;
+            const itemIndex = localDbCache.findIndex(i => i.kode === kodeInput);
+            
+            if(itemIndex === -1) {
+                alert("Barang tidak ditemukan di database!");
+                return;
+            }
+            
+            const item = localDbCache[itemIndex];
+            if(item.status === 'Terjual') {
+                alert("Barang ini SUDAH TERJUAL sebelumnya!");
+                return;
+            }
+
+            document.getElementById('konfirm-foto').src = item.foto;
+            document.getElementById('konfirm-kode').innerText = item.kode;
+            document.getElementById('konfirm-detail').innerHTML = `
+                <div class="flex justify-between border-b pb-1 mb-1">
+                    <span class="text-gray-500">Jenis</span>
+                    <span class="font-bold">${item.kategori} - ${item.jenis}</span>
+                </div>
+                <div class="flex justify-between border-b pb-1 mb-1">
+                    <span class="text-gray-500">Harga</span>
+                    <span class="font-bold text-accent bg-primary px-2 rounded">${formatRupiah(item.harga)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Keterangan</span>
+                    <span class="font-semibold text-right max-w-[150px] truncate">${item.keterangan || '-'}</span>
+                </div>
+            `;
+            
+            document.getElementById('btn-konfirm-jual').onclick = async function() {
+                item.status = 'Terjual';
+                item.tanggal_terjual = new Date().toLocaleDateString('id-ID');
+                
+                await saveItemToDB(item, true); // Update db
+                localDbCache[itemIndex] = item; // Update cache array
+                
+                document.getElementById('modal-terjual').classList.add('hidden');
+                document.getElementById('manual-code').value = '';
+                refreshUI();
+            };
+            
+            document.getElementById('modal-terjual').classList.remove('hidden');
+        }
+
+        function renderKeluar() {
+            const container = document.getElementById('list-keluar');
+            container.innerHTML = '';
+            const soldItems = localDbCache.filter(i => i.status === 'Terjual').reverse();
+            
+            if(soldItems.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 col-span-full text-center py-10">Belum ada barang terjual.</p>';
+                return;
+            }
+
+            soldItems.forEach(item => {
+                container.innerHTML += `
+                    <div class="flex bg-white p-3 rounded-xl shadow-sm border border-gray-100 items-center">
+                        <img src="${item.foto}" class="w-16 h-16 object-cover rounded-lg mr-4 border border-gray-100">
+                        <div class="flex-1">
+                            <p class="font-bold text-primary text-lg leading-tight">${item.kode}</p>
+                            <p class="text-xs text-gray-500 font-semibold mb-1">${item.kategori}</p>
+                            <p class="text-[10px] text-gray-400">Trj: ${item.tanggal_terjual}</p>
+                        </div>
+                        <div class="text-sm font-black bg-primary/10 text-primary px-3 py-2 rounded-lg">
+                            ${formatRupiah(item.harga)}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- Fitur Export & Backup ---
+        async function exportToExcel() {
+            if(localDbCache.length === 0) return alert("Database kosong!");
+            
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Database Barang');
+
+            worksheet.columns = [
+                { header: 'No', key: 'no', width: 5 },
+                { header: 'Foto Barang', key: 'foto', width: 15 },
+                { header: 'Kode', key: 'kode', width: 15 },
+                { header: 'Kategori', key: 'kategori', width: 10 },
+                { header: 'Jenis', key: 'jenis', width: 12 },
+                { header: 'Harga', key: 'harga', width: 15 },
+                { header: 'Keterangan', key: 'keterangan', width: 25 },
+                { header: 'Status', key: 'status', width: 12 },
+                { header: 'Tgl Input', key: 'tanggal', width: 15 },
+                { header: 'Tgl Terjual', key: 'tanggal_terjual', width: 15 }
+            ];
+
+            worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            worksheet.getRow(1).fill = { type: 'pattern', pattern:'solid', fgColor:{ argb:'FF792C82' } };
+            worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+            for(let i = 0; i < localDbCache.length; i++) {
+                let item = localDbCache[i];
+                let row = worksheet.addRow({
+                    no: i + 1,
+                    kode: item.kode,
+                    kategori: item.kategori,
+                    jenis: item.jenis,
+                    harga: item.harga,
+                    keterangan: item.keterangan || '-',
+                    status: item.status,
+                    tanggal: item.tanggal,
+                    tanggal_terjual: item.tanggal_terjual || '-'
+                });
+
+                row.height = 70;
+
+                if(item.foto) {
+                    try {
+                        const base64Data = item.foto.split(',')[1];
+                        const ext = item.foto.substring("data:image/".length, item.foto.indexOf(";base64"));
+                        const imageId = workbook.addImage({ base64: base64Data, extension: ext });
+                        
+                        worksheet.addImage(imageId, {
+                            tl: { col: 1, row: i + 1 },
+                            ext: { width: 80, height: 80 },
+                            editAs: 'oneCell'
+                        });
+                    } catch (e) { console.error(e); }
+                }
+                row.alignment = { vertical: 'middle', horizontal: 'center' };
+                row.getCell('keterangan').alignment = { wrapText: true, vertical: 'middle', horizontal: 'left' };
+            }
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            saveAs(blob, "Database_Aual_Stock.xlsx");
+        }
+
+        function backupJSON() {
+            if(localDbCache.length === 0) return alert("Belum ada data untuk dibackup!");
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(localDbCache));
+            const dlAnchorNode = document.createElement('a');
+            dlAnchorNode.setAttribute("href", dataStr);
+            dlAnchorNode.setAttribute("download", "backup_aual_stock.json");
+            document.body.appendChild(dlAnchorNode);
+            dlAnchorNode.click();
+            dlAnchorNode.remove();
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const importedDb = JSON.parse(e.target.result);
+                    if(confirm("AWAS: Data saat ini akan DITIMPA total oleh file backup. Lanjutkan?")) {
+                        await clearAllDB();
+                        for (const item of importedDb) {
+                            await saveItemToDB(item);
+                        }
+                        localDbCache = importedDb;
+                        refreshUI();
+                        alert("Restore data berhasil!");
+                    }
+                } catch (error) {
+                    alert("File tidak valid atau rusak.");
+                }
+                event.target.value = "";
+            };
+            reader.readAsText(file);
+        }
+
+    </script>
+</body>
+</html>
