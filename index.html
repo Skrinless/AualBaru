@@ -4,502 +4,303 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aual Baru Stock</title>
+    
+    <!-- PWA Requirements -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#792C82">
+    <link rel="apple-touch-icon" href="./img/Asset 2.png">
+
+    <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
     <style>
-        .tab-active { border-bottom: 2px solid #792C82; color: #792C82; font-weight: bold; }
-        .hidden { display: none; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .tab-active { border-bottom: 3px solid #B5FF4A; color: #B5FF4A; font-weight: bold; }
+        .tab-inactive { color: #e5b3ee; border-bottom: 1px solid #9d4b9f; }
+        .hidden { display: none !important; }
+        .bg-primary { background-color: #792C82; }
+        .bg-accent { background-color: #B5FF4A; }
+        .text-primary { color: #792C82; }
+        .text-accent { color: #B5FF4A; }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans">
 
-    <!-- Loading Screen untuk inisialisasi IndexedDB -->
-    <div id="loading-screen" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center">
-        <svg class="animate-spin h-10 w-10 text-[#792C82] mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-        <p class="text-lg font-bold text-gray-700 animate-pulse">Menyiapkan Database...</p>
-    </div>
-
-    <div class="max-w-5xl mx-auto bg-white min-h-screen shadow-xl relative overflow-hidden flex flex-col">
-        <div class="p-4 md:p-6 bg-[#792C82] text-white">
-            <div class="flex flex-col md:flex-row md:justify-between items-center gap-4">
-                <div class="flex items-center gap-3">
-                    <img src="./img/Asset 2.png" alt="Aual Baru Logo" class="w-12 h-12 object-contain rounded-md shadow-sm bg-white p-1" onerror="this.style.display='none'">
-                    <h1 class="text-2xl font-bold">Aual Baru Stock</h1>
+    <div class="max-w-5xl mx-auto bg-white min-h-screen shadow-2xl">
+        
+        <!-- Header & Summary -->
+        <div class="p-5 bg-primary text-white">
+            <div class="flex items-center justify-center space-x-3 mb-4">
+                <img src="./img/Asset 2.png" alt="Logo Aual Baru" class="w-12 h-12 object-contain bg-white p-1 rounded-lg">
+                <h1 class="text-2xl md:text-3xl font-bold">Aual Baru Stock</h1>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div class="bg-white/20 p-3 rounded-lg text-center backdrop-blur-sm border border-white/30">
+                    <p class="text-xs text-accent font-semibold uppercase tracking-wider">Total Barang</p>
+                    <p class="font-bold text-2xl" id="sum-total">0</p>
                 </div>
-                
-                <div class="flex flex-wrap md:flex-nowrap gap-2 w-full md:w-auto mt-4 md:mt-0 justify-center">
-                    <button onclick="exportToExcel()" class="bg-[#B5FF4A] hover:bg-[#a0eb3f] text-gray-900 p-2 md:px-4 rounded-lg font-bold text-xs shadow-md transition-colors flex items-center justify-center gap-2 flex-grow md:flex-grow-0">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                        <span class="hidden sm:inline">Download</span> Excel
-                    </button>
-                    <button onclick="backupJSON()" class="bg-gray-800 hover:bg-gray-900 text-white p-2 md:px-4 rounded-lg font-bold text-xs shadow-md transition-colors flex items-center justify-center gap-1 flex-grow md:flex-grow-0">
-                        💾 <span class="hidden sm:inline">Backup</span> JSON
-                    </button>
-                    <button onclick="document.getElementById('file-import').click()" class="bg-white hover:bg-gray-100 text-[#792C82] border border-white p-2 md:px-4 rounded-lg font-bold text-xs shadow-md transition-colors flex items-center justify-center gap-1 flex-grow md:flex-grow-0">
-                        📂 <span class="hidden sm:inline">Import</span> JSON
-                    </button>
-                    <input type="file" id="file-import" accept=".json" class="hidden" onchange="importJSON(event)">
+                <div class="bg-white/20 p-3 rounded-lg text-center backdrop-blur-sm border border-white/30">
+                    <p class="text-xs text-accent font-semibold uppercase tracking-wider">Terjual</p>
+                    <p class="font-bold text-2xl" id="sum-sold">0</p>
+                </div>
+                <div class="bg-white/20 p-3 rounded-lg text-center backdrop-blur-sm border border-white/30">
+                    <p class="text-xs text-accent font-semibold uppercase tracking-wider">Stok Sendiri (OR)</p>
+                    <p class="font-bold text-2xl" id="sum-or">0</p>
+                </div>
+                <div class="bg-white/20 p-3 rounded-lg text-center backdrop-blur-sm border border-white/30">
+                    <p class="text-xs text-accent font-semibold uppercase tracking-wider">Titipan (TP)</p>
+                    <p class="font-bold text-2xl" id="sum-tp">0</p>
                 </div>
             </div>
             
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mt-6 text-sm">
-                <div class="bg-[#5D2264] p-3 rounded-xl text-center shadow-inner flex flex-col justify-center">
-                    <p class="text-xs md:text-sm text-gray-200">Total Barang</p>
-                    <p class="font-bold text-xl md:text-2xl mt-1" id="sum-total">0</p>
-                </div>
-                <div class="bg-[#5D2264] p-3 rounded-xl text-center shadow-inner flex flex-col justify-center">
-                    <p class="text-xs md:text-sm text-gray-200">Terjual</p>
-                    <p class="font-bold text-xl md:text-2xl mt-1" id="sum-sold">0</p>
-                </div>
-                <div class="bg-[#5D2264] p-3 rounded-xl text-center shadow-inner flex flex-col justify-center">
-                    <p class="text-xs md:text-sm text-gray-200">Stok Sendiri (OR)</p>
-                    <p class="font-bold text-xl md:text-2xl mt-1" id="sum-or">0</p>
-                </div>
-                <div class="bg-[#5D2264] p-3 rounded-xl text-center shadow-inner flex flex-col justify-center">
-                    <p class="text-xs md:text-sm text-gray-200">Titipan (TP)</p>
-                    <p class="font-bold text-xl md:text-2xl mt-1" id="sum-tp">0</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="flex border-b text-center text-sm md:text-base font-semibold bg-white sticky top-0 z-10 shadow-sm">
-            <div id="tab-masuk" class="w-1/2 p-4 cursor-pointer tab-active transition-colors hover:bg-gray-50" onclick="switchTab('masuk')">Barang Masuk</div>
-            <div id="tab-keluar" class="w-1/2 p-4 cursor-pointer text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors" onclick="switchTab('keluar')">Barang Keluar</div>
-        </div>
-
-        <div id="content-masuk" class="p-4 md:p-6 bg-gray-50 flex-grow pb-20">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <button onclick="document.getElementById('modal-tambah').classList.remove('hidden')" class="w-full sm:w-auto bg-[#792C82] hover:bg-[#5D2264] text-white font-bold py-3 px-6 rounded-xl shadow-md transition-transform transform active:scale-95 flex items-center justify-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                    Tambah Barang Baru
+            <!-- Tombol Aksi Database -->
+            <div class="flex flex-col md:flex-row gap-2 mt-4">
+                <button onclick="exportToExcel()" class="flex-1 bg-accent hover:bg-[#9de535] text-gray-900 py-2 px-4 rounded-lg font-bold text-sm transition shadow-lg">
+                    📥 Download Excel
                 </button>
-                
-                <div class="flex items-center gap-3 w-full sm:w-auto bg-white p-2 rounded-lg border border-gray-200 shadow-sm">
-                    <label for="filter-masuk" class="text-sm font-semibold text-gray-600 pl-2">Filter:</label>
-                    <select id="filter-masuk" onchange="renderList()" class="border-none text-sm p-1.5 rounded-md focus:ring-0 bg-gray-50 outline-none w-full sm:w-auto cursor-pointer font-medium text-[#792C82]">
-                        <option value="all">Semua Status</option>
-                        <option value="ready">Ready Stok</option>
-                        <option value="sold">Terjual</option>
-                    </select>
-                </div>
+                <button onclick="backupJSON()" class="flex-1 bg-white/20 hover:bg-white/30 text-white py-2 px-4 rounded-lg font-bold text-sm border border-white/40 transition">
+                    💾 Backup JSON
+                </button>
+                <button onclick="document.getElementById('file-import').click()" class="flex-1 bg-white/20 hover:bg-white/30 text-white py-2 px-4 rounded-lg font-bold text-sm border border-white/40 transition">
+                    📂 Import JSON
+                </button>
+                <input type="file" id="file-import" accept=".json" class="hidden" onchange="importJSON(event)">
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex border-b bg-primary text-center text-sm md:text-base font-semibold">
+            <div id="tab-masuk" class="w-1/2 p-3 cursor-pointer tab-active transition" onclick="switchTab('masuk')">Barang Masuk</div>
+            <div id="tab-keluar" class="w-1/2 p-3 cursor-pointer tab-inactive transition hover:text-white" onclick="switchTab('keluar')">Barang Keluar</div>
+        </div>
+
+        <!-- Content: Barang Masuk -->
+        <div id="content-masuk" class="p-4 md:p-6">
+            <button onclick="bukaModalTambah()" class="w-full bg-accent hover:bg-[#9de535] text-gray-900 font-bold py-3 md:py-4 rounded-xl shadow-md mb-6 transition text-lg">
+                + Tambah Barang Baru
+            </button>
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2">
+                <h2 class="font-bold text-xl text-primary">Database Barang</h2>
+                <select id="filter-masuk" onchange="renderList()" class="border-2 border-primary text-sm p-2 rounded-lg bg-gray-50 focus:outline-none w-full md:w-auto">
+                    <option value="all">Tampilkan Semua</option>
+                    <option value="ready">Ready Stok</option>
+                    <option value="sold">Terjual</option>
+                </select>
             </div>
             
+            <!-- Grid Container for Items -->
             <div id="list-masuk" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         </div>
 
-        <div id="content-keluar" class="p-4 md:p-6 bg-gray-50 flex-grow pb-20 hidden">
-            <div class="flex flex-col lg:flex-row gap-6 mb-8">
-                <!-- Scanner Section -->
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex-1 max-w-lg mx-auto w-full">
-                    <div class="flex items-center gap-2 mb-4 justify-center text-[#792C82]">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                        <h3 class="font-bold text-base text-gray-800">Scan OCR Kode Barang</h3>
+        <!-- Content: Barang Keluar -->
+        <div id="content-keluar" class="p-4 md:p-6 hidden">
+            <div class="bg-primary/5 p-4 rounded-xl mb-6 border border-primary/20 max-w-xl mx-auto">
+                <h3 class="font-bold text-lg text-primary text-center mb-3">Scan OCR Kode Barang</h3>
+                <video id="video-preview" class="w-full h-64 bg-black rounded-lg mb-3 hidden object-cover" autoplay playsinline></video>
+                <button id="btn-start-scan" onclick="startCamera()" class="bg-primary hover:bg-[#5e2166] text-white px-4 py-3 rounded-lg text-sm font-bold w-full mb-3 shadow-lg transition">📷 Buka Kamera Scanner</button>
+                <button id="btn-capture" onclick="scanOCR()" class="bg-accent hover:bg-[#9de535] text-gray-900 px-4 py-3 rounded-lg text-sm font-bold w-full hidden shadow-lg transition">🔍 Scan Gambar</button>
+                <p id="ocr-status" class="text-xs font-semibold text-center text-primary mt-1 h-4"></p>
+                
+                <div class="mt-4 pt-4 border-t border-primary/20 relative">
+                    <p class="text-xs font-bold text-primary mb-2">Atau input kode manual:</p>
+                    <div class="flex gap-2">
+                        <input type="text" id="manual-code" placeholder="Ketik kode (misal: OR-BJU)" onkeyup="showSuggestions(this.value)" class="border-2 border-gray-300 focus:border-primary p-2 w-full rounded-lg text-sm uppercase outline-none font-bold">
+                        <button onclick="processCode(document.getElementById('manual-code').value.toUpperCase())" class="bg-primary text-white px-4 py-2 rounded-lg font-bold text-sm shadow-md hover:bg-[#5e2166] transition">Cari</button>
                     </div>
-                    
-                    <div class="relative rounded-xl overflow-hidden bg-gray-900 mb-4 shadow-inner aspect-video md:aspect-[4/3] flex items-center justify-center">
-                        <video id="video-preview" class="w-full h-full object-cover hidden" autoplay playsinline></video>
-                        <div id="scanner-overlay" class="absolute inset-0 border-2 border-[#B5FF4A] border-dashed opacity-50 m-6 hidden rounded-lg pointer-events-none"></div>
-                        <p id="camera-placeholder" class="text-gray-500 text-sm flex flex-col items-center gap-2">
-                            <svg class="w-8 h-8 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                            Kamera Nonaktif
-                        </p>
-                    </div>
-                    
-                    <button id="btn-start-scan" onclick="startCamera()" class="bg-[#792C82] hover:bg-[#5D2264] text-white px-4 py-3 rounded-xl text-sm font-bold w-full mb-2 transition-colors flex justify-center items-center gap-2 shadow-sm">
-                        Buka Kamera Scanner
-                    </button>
-                    <button id="btn-capture" onclick="scanOCR()" class="bg-[#B5FF4A] hover:bg-[#a0eb3f] text-gray-900 px-4 py-3 rounded-xl text-sm font-bold w-full hidden transition-colors shadow-md">
-                        🔍 Proses Gambar OCR
-                    </button>
-                    <p id="ocr-status" class="text-xs text-center text-gray-500 mt-3 min-h-[20px] px-2"></p>
-                </div>
-
-                <!-- Manual Input Section -->
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex-1 flex flex-col justify-center">
-                    <div class="flex items-center gap-2 mb-4 text-gray-700">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                        <h3 class="font-bold text-base">Input Manual (Backup)</h3>
-                    </div>
-                    <p class="text-sm text-gray-500 mb-4">Gunakan ini jika label tidak terbaca oleh kamera atau scanner gagal memproses gambar.</p>
-                    
-                    <div class="flex flex-col sm:flex-row gap-3">
-                        <div class="relative w-full">
-                            <input type="text" id="manual-code" placeholder="Ketik kode (Misal: OR-BJU)" class="border border-gray-300 p-3 w-full rounded-xl text-base uppercase focus:ring-2 focus:ring-[#792C82] focus:border-transparent outline-none transition-all" autocomplete="off" oninput="showSuggestions(this.value)">
-                            <div id="autocomplete-list" class="absolute z-20 w-full bg-white border border-gray-200 mt-1 rounded-xl shadow-xl hidden max-h-60 overflow-y-auto"></div>
-                        </div>
-                        <button onclick="processCode(document.getElementById('manual-code').value.toUpperCase())" class="bg-gray-800 hover:bg-gray-900 text-white px-6 py-3 rounded-xl font-bold text-base transition-colors shadow-md whitespace-nowrap">
-                            Cari Barang
-                        </button>
-                    </div>
+                    <!-- Autocomplete Dropdown -->
+                    <div id="suggestions" class="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-xl mt-1 max-h-48 overflow-y-auto hidden"></div>
                 </div>
             </div>
 
-            <div class="flex items-center gap-2 mb-4 text-gray-700 border-b pb-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <h2 class="font-bold text-lg">Riwayat Barang Keluar (Terjual)</h2>
-            </div>
-            
+            <h2 class="font-bold text-xl text-primary mb-4">Riwayat Barang Keluar</h2>
             <div id="list-keluar" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         </div>
     </div>
 
-    <!-- Modal Tambah Barang -->
-    <div id="modal-tambah" class="fixed inset-0 bg-gray-900 bg-opacity-70 flex items-center justify-center p-4 hidden z-50 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[95vh] overflow-y-auto shadow-2xl">
-            <div class="flex justify-between items-center mb-6 border-b pb-3">
-                <h2 class="font-bold text-xl text-gray-800">Tambah Barang Baru</h2>
-                <button onclick="closeModalTambah()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 hover:bg-red-50 p-1.5 rounded-lg">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                <div class="sm:col-span-2 bg-gray-50 p-4 rounded-xl border-2 border-dashed border-gray-300 hover:border-[#792C82] transition-colors">
-                    <label class="block mb-2 font-semibold text-gray-700 flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        Upload Foto Barang
-                    </label>
-                    <input type="file" id="input-foto" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-[#f1e6f3] file:text-[#792C82] hover:file:bg-[#e4d0e7] transition-all cursor-pointer" onchange="compressImage(event)">
-                    <div class="mt-3 flex justify-center">
-                        <img id="preview-foto" class="h-40 w-auto max-w-full object-contain rounded-lg shadow-sm hidden border border-gray-200 bg-white">
-                    </div>
+    <!-- Modal Form (Tambah/Edit) -->
+    <div id="modal-form" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md max-h-[95vh] overflow-y-auto shadow-2xl">
+            <h2 id="modal-title" class="font-bold text-2xl text-primary mb-5 border-b pb-2">Tambah Barang</h2>
+            <input type="hidden" id="edit-id">
+            <div class="space-y-4 text-sm">
+                <div>
+                    <label class="block mb-1 font-bold text-gray-700">Foto Barang</label>
+                    <input type="file" id="input-foto" accept="image/*" class="w-full border-2 border-gray-200 p-2 rounded-lg text-xs focus:border-primary outline-none" onchange="compressImage(event)">
+                    <img id="preview-foto" class="mt-3 w-full h-40 object-cover rounded-lg hidden border border-gray-200">
                     <input type="hidden" id="foto-base64">
                 </div>
-                
-                <div>
-                    <label class="block mb-1.5 font-semibold text-gray-700">Kategori</label>
-                    <select id="input-kategori" class="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-[#792C82] focus:border-transparent outline-none bg-white">
-                        <option value="OR">Stok Sendiri (OR)</option>
-                        <option value="TP">Titipan Konsinyasi (TP)</option>
-                    </select>
-                </div>
-                
-                <div>
-                    <label class="block mb-1.5 font-semibold text-gray-700">Jenis Barang</label>
-                    <select id="input-jenis" class="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-[#792C82] focus:border-transparent outline-none bg-white">
-                        <option value="BJU">Baju</option>
-                        <option value="CLN">Celana</option>
-                        <option value="JKT">Jaket</option>
-                        <option value="TAS">Tas</option>
-                        <option value="JLB">Jilbab</option>
-                        <option value="AKS">Aksesoris</option>
-                        <option value="MNN">Mainan</option>
-                        <option value="HSW">Houseware</option>
-                    </select>
-                </div>
-                
-                <div class="sm:col-span-2">
-                    <label class="block mb-1.5 font-semibold text-gray-700">Harga (Rp)</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 font-semibold">Rp</span>
-                        <input type="number" id="input-harga" class="w-full border border-gray-300 p-3 pl-10 rounded-xl focus:ring-2 focus:ring-[#792C82] focus:border-transparent outline-none" placeholder="0">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block mb-1 font-bold text-gray-700">Kategori</label>
+                        <select id="input-kategori" class="w-full border-2 border-gray-200 p-2 rounded-lg focus:border-primary outline-none bg-white">
+                            <option value="OR">Stok Sendiri (OR)</option>
+                            <option value="TP">Titipan (TP)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block mb-1 font-bold text-gray-700">Jenis Barang</label>
+                        <select id="input-jenis" class="w-full border-2 border-gray-200 p-2 rounded-lg focus:border-primary outline-none bg-white">
+                            <option value="BJU">Baju</option>
+                            <option value="CLN">Celana</option>
+                            <option value="JKT">Jaket</option>
+                            <option value="TAS">Tas</option>
+                            <option value="JLB">Jilbab</option>
+                            <option value="AKS">Aksesoris</option>
+                            <option value="MNN">Mainan</option>
+                            <option value="HSW">Houseware</option>
+                        </select>
                     </div>
                 </div>
-
-                <div class="sm:col-span-2">
-                    <label class="block mb-1.5 font-semibold text-gray-700">Keterangan (Opsional)</label>
-                    <input type="text" id="input-keterangan" class="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-[#792C82] focus:border-transparent outline-none" placeholder="Contoh: Warna merah maroon, ukuran L">
-                </div>
-            </div>
-            
-            <div class="mt-6 sm:mt-8 pt-4 border-t flex flex-col sm:flex-row gap-3">
-                <button onclick="closeModalTambah()" class="w-full sm:w-1/3 bg-gray-100 hover:bg-gray-200 text-gray-700 p-3 rounded-xl font-bold transition-colors">Batal</button>
-                <button onclick="simpanBarang()" class="w-full sm:w-2/3 bg-[#792C82] hover:bg-[#5D2264] text-white p-3 rounded-xl font-bold shadow-md transition-colors flex items-center justify-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                    Simpan Barang
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Edit Barang -->
-    <div id="modal-edit" class="fixed inset-0 bg-gray-900 bg-opacity-70 flex items-center justify-center p-4 hidden z-50 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[95vh] overflow-y-auto shadow-2xl">
-            <div class="flex justify-between items-center mb-6 border-b pb-3">
                 <div>
-                    <h2 class="font-bold text-xl text-gray-800">Edit Data Barang</h2>
-                    <p id="edit-kode-title" class="text-[#792C82] font-black text-lg tracking-wider"></p>
+                    <label class="block mb-1 font-bold text-gray-700">Harga (Rp)</label>
+                    <input type="number" id="input-harga" class="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-primary outline-none text-lg font-bold" placeholder="Contoh: 50000">
                 </div>
-                <button onclick="closeEditModal()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 hover:bg-red-50 p-1.5 rounded-lg">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                <div class="sm:col-span-2 bg-gray-50 p-4 rounded-xl border-2 border-dashed border-gray-300 hover:border-[#792C82] transition-colors">
-                    <label class="block mb-2 font-semibold text-gray-700 flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        Ubah Foto Barang
-                    </label>
-                    <input type="file" id="edit-input-foto" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-[#f1e6f3] file:text-[#792C82] hover:file:bg-[#e4d0e7] transition-all cursor-pointer" onchange="compressEditImage(event)">
-                    <div class="mt-3 flex justify-center">
-                        <img id="edit-preview-foto" class="h-40 w-auto max-w-full object-contain rounded-lg shadow-sm border border-gray-200 bg-white">
-                    </div>
-                    <input type="hidden" id="edit-foto-base64">
-                </div>
-                
                 <div>
-                    <label class="block mb-1.5 font-semibold text-gray-700">Kategori</label>
-                    <select id="edit-kategori" class="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-[#792C82] focus:border-transparent outline-none bg-white">
-                        <option value="OR">Stok Sendiri (OR)</option>
-                        <option value="TP">Titipan Konsinyasi (TP)</option>
-                    </select>
-                </div>
-                
-                <div>
-                    <label class="block mb-1.5 font-semibold text-gray-700">Jenis Barang</label>
-                    <select id="edit-jenis" class="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-[#792C82] focus:border-transparent outline-none bg-white">
-                        <option value="BJU">Baju</option>
-                        <option value="CLN">Celana</option>
-                        <option value="JKT">Jaket</option>
-                        <option value="TAS">Tas</option>
-                        <option value="JLB">Jilbab</option>
-                        <option value="AKS">Aksesoris</option>
-                        <option value="MNN">Mainan</option>
-                        <option value="HSW">Houseware</option>
-                    </select>
-                </div>
-                
-                <div class="sm:col-span-2">
-                    <label class="block mb-1.5 font-semibold text-gray-700">Harga (Rp)</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 font-semibold">Rp</span>
-                        <input type="number" id="edit-harga" class="w-full border border-gray-300 p-3 pl-10 rounded-xl focus:ring-2 focus:ring-[#792C82] focus:border-transparent outline-none" placeholder="0">
-                    </div>
-                </div>
-
-                <div class="sm:col-span-2">
-                    <label class="block mb-1.5 font-semibold text-gray-700">Keterangan (Opsional)</label>
-                    <input type="text" id="edit-keterangan" class="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-[#792C82] focus:border-transparent outline-none" placeholder="Contoh: Warna merah maroon, ukuran L">
+                    <label class="block mb-1 font-bold text-gray-700">Keterangan (Opsional)</label>
+                    <textarea id="input-keterangan" rows="2" class="w-full border-2 border-gray-200 p-2 rounded-lg focus:border-primary outline-none" placeholder="Merk, ukuran, warna..."></textarea>
                 </div>
             </div>
-            
-            <div class="mt-6 sm:mt-8 pt-4 border-t flex flex-col sm:flex-row gap-3">
-                <button onclick="closeEditModal()" class="w-full sm:w-1/3 bg-gray-100 hover:bg-gray-200 text-gray-700 p-3 rounded-xl font-bold transition-colors">Batal</button>
-                <button onclick="updateDataBarang()" class="w-full sm:w-2/3 bg-[#792C82] hover:bg-[#5D2264] text-white p-3 rounded-xl font-bold shadow-md transition-colors flex items-center justify-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                    Update Barang
-                </button>
+            <div class="flex gap-3 mt-6">
+                <button onclick="tutupModalForm()" class="w-1/3 bg-gray-200 hover:bg-gray-300 text-gray-800 p-3 rounded-lg font-bold transition">Batal</button>
+                <button onclick="simpanBarang()" class="w-2/3 bg-primary hover:bg-[#5e2166] text-white p-3 rounded-lg font-bold shadow-lg transition text-lg">Simpan</button>
             </div>
         </div>
     </div>
 
     <!-- Modal Konfirmasi Terjual -->
-    <div id="modal-terjual" class="fixed inset-0 bg-gray-900 bg-opacity-70 flex items-center justify-center p-4 hidden z-50 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl transform transition-all">
-            <div class="w-16 h-16 bg-[#B5FF4A] bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg class="w-8 h-8 text-[#792C82]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            </div>
-            <h2 class="font-bold text-xl text-gray-800 mb-2">Konfirmasi Penjualan</h2>
-            <div class="bg-gray-50 p-3 rounded-xl mb-4 border border-gray-100">
-                <img id="konfirm-foto" class="w-32 h-32 object-cover mx-auto rounded-lg shadow-sm mb-3 border border-gray-200">
-                <h3 id="konfirm-kode" class="font-black text-2xl text-[#792C82] tracking-wide"></h3>
-                <p id="konfirm-detail" class="text-gray-600 text-sm mt-2"></p>
-            </div>
-            <div class="flex flex-col sm:flex-row gap-3">
-                <button onclick="document.getElementById('modal-terjual').classList.add('hidden')" class="w-full sm:w-1/2 bg-gray-100 hover:bg-gray-200 text-gray-700 p-3.5 rounded-xl font-bold transition-colors">Batal</button>
-                <button id="btn-konfirm-jual" class="w-full sm:w-1/2 bg-[#B5FF4A] hover:bg-[#a0eb3f] text-gray-900 p-3.5 rounded-xl font-bold shadow-md transition-all transform active:scale-95 text-lg">Konfirmasi Terjual</button>
+    <div id="modal-terjual" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl border-t-8 border-accent">
+            <h2 class="font-bold text-2xl mb-1 text-primary">Konfirmasi</h2>
+            <p class="text-sm text-gray-500 mb-4">Tandai barang ini sebagai terjual?</p>
+            
+            <img id="konfirm-foto" class="w-40 h-40 object-cover mx-auto rounded-xl mb-4 border-2 border-gray-100 shadow-sm">
+            <h3 id="konfirm-kode" class="font-black text-2xl text-primary bg-primary/10 py-1 rounded-lg"></h3>
+            
+            <div id="konfirm-detail" class="text-gray-700 text-sm my-4 bg-gray-50 p-3 rounded-lg border text-left"></div>
+            
+            <div class="flex gap-3 mt-2">
+                <button onclick="document.getElementById('modal-terjual').classList.add('hidden')" class="w-1/2 bg-gray-200 hover:bg-gray-300 p-3 rounded-xl font-bold transition">Batal</button>
+                <button id="btn-konfirm-jual" class="w-1/2 bg-accent hover:bg-[#9de535] text-gray-900 p-3 rounded-xl font-black shadow-lg transition text-lg">Ya, Terjual!</button>
             </div>
         </div>
     </div>
 
     <script>
-        // State Variables
-        let db = []; // In-memory database mirroring IndexedDB for fast UI rendering
+        // --- Registrasi Service Worker PWA ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW terdaftar', err));
+            });
+        }
+
+        // --- Variabel Global & IndexedDB Setup ---
+        let localDbCache = []; 
         let videoStream = null;
-        let currentEditId = null;
+        let db;
 
-        // --- SETUP INDEXEDDB ---
-        const DB_NAME = 'AualStockDB';
-        const DB_VERSION = 1;
-        const STORE_NAME = 'items';
-        let idb;
+        const request = indexedDB.open("AualStockDB", 1);
 
-        function initIndexedDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-                
-                request.onerror = (event) => {
-                    console.error("Database error: " + event.target.errorCode);
-                    reject("Gagal membuka database lokal.");
-                };
-                
-                request.onupgradeneeded = (event) => {
-                    const dbInstance = event.target.result;
-                    if (!dbInstance.objectStoreNames.contains(STORE_NAME)) {
-                        dbInstance.createObjectStore(STORE_NAME, { keyPath: 'id' });
-                    }
-                };
-                
-                request.onsuccess = (event) => {
-                    idb = event.target.result;
-                    resolve(idb);
-                };
-            });
-        }
-
-        function getAllFromDB() {
-            return new Promise((resolve, reject) => {
-                const transaction = idb.transaction([STORE_NAME], 'readonly');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.getAll();
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-            });
-        }
-
-        function saveToDB(item) {
-            return new Promise((resolve, reject) => {
-                const transaction = idb.transaction([STORE_NAME], 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.put(item);
-                request.onsuccess = () => resolve();
-                request.onerror = () => reject(request.error);
-            });
-        }
-
-        function clearDB() {
-            return new Promise((resolve, reject) => {
-                const transaction = idb.transaction([STORE_NAME], 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.clear();
-                request.onsuccess = () => resolve();
-                request.onerror = () => reject(request.error);
-            });
-        }
-
-        function bulkSaveToDB(itemsArray) {
-            return new Promise((resolve, reject) => {
-                const transaction = idb.transaction([STORE_NAME], 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
-                itemsArray.forEach(item => {
-                    store.put(item);
-                });
-                transaction.oncomplete = () => resolve();
-                transaction.onerror = () => reject(transaction.error);
-            });
-        }
-
-        // --- MIGRATION SCRIPT (LocalStorage to IndexedDB) ---
-        async function migrateData() {
-            const oldDataRaw = localStorage.getItem('aual_db');
-            if (oldDataRaw) {
-                try {
-                    const oldData = JSON.parse(oldDataRaw);
-                    if (oldData && oldData.length > 0) {
-                        console.log("Migrating data from LocalStorage to IndexedDB...");
-                        // Only save if IndexedDB is currently empty
-                        const currentData = await getAllFromDB();
-                        if(currentData.length === 0) {
-                            await bulkSaveToDB(oldData);
-                            console.log("Migration successful.");
-                        }
-                    }
-                    // Clean up localStorage to free space and prevent re-migration
-                    localStorage.setItem('aual_db_backup', oldDataRaw); // Safe backup
-                    localStorage.removeItem('aual_db');
-                } catch(e) {
-                    console.error("Migration error", e);
-                }
-            }
-        }
-
-        // --- APP INITIALIZATION ---
-        window.onload = async () => {
-            try {
-                await initIndexedDB();
-                await migrateData();
-                db = await getAllFromDB();
-                
-                document.getElementById('loading-screen').style.display = 'none';
-                
-                updateSummary();
-                renderList();
-            } catch (error) {
-                alert("Fatal Error: Gagal memuat database browser. " + error);
-                document.getElementById('loading-screen').style.display = 'none';
+        request.onupgradeneeded = function(event) {
+            db = event.target.result;
+            if (!db.objectStoreNames.contains("barang")) {
+                db.createObjectStore("barang", { keyPath: "id" });
             }
         };
 
-        // --- Core UI Functions ---
-        function updateSummary() {
-            let total = db.length;
-            let sold = db.filter(i => i.status === 'Terjual').length;
-            let or = db.filter(i => i.kategori === 'OR').length;
-            let tp = db.filter(i => i.kategori === 'TP').length;
+        request.onsuccess = function(event) {
+            db = event.target.result;
+            loadDataFromDB();
+        };
 
-            animateValue("sum-total", parseInt(document.getElementById('sum-total').innerText), total, 300);
-            animateValue("sum-sold", parseInt(document.getElementById('sum-sold').innerText), sold, 300);
-            animateValue("sum-or", parseInt(document.getElementById('sum-or').innerText), or, 300);
-            animateValue("sum-tp", parseInt(document.getElementById('sum-tp').innerText), tp, 300);
-        }
-        
-        function animateValue(id, start, end, duration) {
-            if (start === end) return;
-            const obj = document.getElementById(id);
-            let startTimestamp = null;
-            const step = (timestamp) => {
-                if (!startTimestamp) startTimestamp = timestamp;
-                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-                obj.innerHTML = Math.floor(progress * (end - start) + start);
-                if (progress < 1) window.requestAnimationFrame(step);
+        request.onerror = function(event) {
+            console.error("IndexedDB Error:", event.target.errorCode);
+            alert("Browser Anda tidak mendukung IndexedDB. Data tidak bisa disimpan permanen.");
+        };
+
+        // --- Fungsi Database Core ---
+        function loadDataFromDB() {
+            const transaction = db.transaction(["barang"], "readonly");
+            const store = transaction.objectStore("barang");
+            const getAllRequest = store.getAll();
+
+            getAllRequest.onsuccess = function() {
+                localDbCache = getAllRequest.result;
+                
+                // Migrasi otomatis dari localStorage jika ada dan IndexedDB kosong
+                const oldData = localStorage.getItem('aual_db');
+                if (localDbCache.length === 0 && oldData) {
+                    const parsedData = JSON.parse(oldData);
+                    const writeTx = db.transaction(["barang"], "readwrite");
+                    const writeStore = writeTx.objectStore("barang");
+                    parsedData.forEach(item => writeStore.add(item));
+                    
+                    writeTx.oncomplete = function() {
+                        localDbCache = parsedData;
+                        localStorage.removeItem('aual_db'); // Hapus data lama agar memori lega
+                        refreshUI();
+                    };
+                } else {
+                    refreshUI();
+                }
             };
-            window.requestAnimationFrame(step);
+        }
+
+        function saveItemToDB(item, isUpdate = false) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(["barang"], "readwrite");
+                const store = transaction.objectStore("barang");
+                const req = isUpdate ? store.put(item) : store.add(item);
+                
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        function clearAllDB() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(["barang"], "readwrite");
+                const store = transaction.objectStore("barang");
+                const req = store.clear();
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject();
+            });
+        }
+
+        // --- UI & Rendering ---
+        function refreshUI() {
+            updateSummary();
+            renderList();
+            renderKeluar();
+        }
+
+        function updateSummary() {
+            document.getElementById('sum-total').innerText = localDbCache.length;
+            document.getElementById('sum-sold').innerText = localDbCache.filter(i => i.status === 'Terjual').length;
+            document.getElementById('sum-or').innerText = localDbCache.filter(i => i.kategori === 'OR').length;
+            document.getElementById('sum-tp').innerText = localDbCache.filter(i => i.kategori === 'TP').length;
         }
 
         function switchTab(tab) {
-            const activeClass = 'w-1/2 p-4 cursor-pointer tab-active transition-colors hover:bg-gray-50';
-            const inactiveClass = 'w-1/2 p-4 cursor-pointer text-gray-400 hover:text-gray-600 hover:bg-gray-50 border-b-2 border-transparent transition-colors';
+            const isMasuk = tab === 'masuk';
+            document.getElementById('tab-masuk').className = `w-1/2 p-3 cursor-pointer transition ${isMasuk ? 'tab-active' : 'tab-inactive hover:text-white'}`;
+            document.getElementById('tab-keluar').className = `w-1/2 p-3 cursor-pointer transition ${!isMasuk ? 'tab-active' : 'tab-inactive hover:text-white'}`;
             
-            document.getElementById('tab-masuk').className = tab === 'masuk' ? activeClass : inactiveClass;
-            document.getElementById('tab-keluar').className = tab === 'keluar' ? activeClass : inactiveClass;
+            document.getElementById('content-masuk').classList.toggle('hidden', !isMasuk);
+            document.getElementById('content-keluar').classList.toggle('hidden', isMasuk);
             
-            document.getElementById('content-masuk').classList.toggle('hidden', tab !== 'masuk');
-            document.getElementById('content-keluar').classList.toggle('hidden', tab !== 'keluar');
-            
-            if(tab === 'keluar') renderKeluar();
-            else renderList();
-            
-            if(tab === 'masuk' && videoStream) stopCamera();
+            if(!isMasuk) renderKeluar(); else renderList();
+            if(isMasuk && videoStream) stopCamera();
         }
 
         function formatRupiah(angka) {
             return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(angka);
         }
 
-        function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            const bgClass = type === 'success' ? 'bg-[#B5FF4A] text-gray-900' : 'bg-red-500 text-white';
-            toast.className = `fixed bottom-6 right-6 transform ${bgClass} px-6 py-3 rounded-xl font-bold shadow-2xl z-[60] flex items-center gap-3 transition-all duration-300 translate-y-10 opacity-0`;
-            
-            toast.innerHTML = `
-                ${type === 'success' 
-                    ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>'
-                    : '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>'}
-                ${message}
-            `;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.classList.remove('translate-y-10', 'opacity-0'), 10);
-            setTimeout(() => {
-                toast.classList.add('translate-y-10', 'opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        // --- STREAMING_CHUNK:Barang Masuk Logic ---
-        function closeModalTambah() {
-            document.getElementById('modal-tambah').classList.add('hidden');
-            document.getElementById('input-foto').value = '';
-            document.getElementById('preview-foto').classList.add('hidden');
-            document.getElementById('foto-base64').value = '';
-            document.getElementById('input-harga').value = '';
-            document.getElementById('input-keterangan').value = '';
-        }
-
+        // --- Fitur CRUD Barang ---
         function compressImage(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -510,151 +311,114 @@
                 img.src = e.target.result;
                 img.onload = function () {
                     const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 800; 
+                    const MAX_WIDTH = 800; // Optimal untuk kualitas dan ukuran
                     const scaleSize = MAX_WIDTH / img.width;
-                    if (img.width > MAX_WIDTH) {
-                        canvas.width = MAX_WIDTH;
-                        canvas.height = img.height * scaleSize;
-                    } else {
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                    }
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    const base64 = canvas.toDataURL('image/jpeg', 0.8);
+                    
+                    const base64 = canvas.toDataURL('image/jpeg', 0.6);
                     document.getElementById('foto-base64').value = base64;
-                    document.getElementById('preview-foto').src = base64;
-                    document.getElementById('preview-foto').classList.remove('hidden');
+                    const preview = document.getElementById('preview-foto');
+                    preview.src = base64;
+                    preview.classList.remove('hidden');
                 }
             };
+        }
+
+        function bukaModalTambah() {
+            document.getElementById('modal-title').innerText = "Tambah Barang Baru";
+            document.getElementById('edit-id').value = "";
+            document.getElementById('input-foto').value = "";
+            document.getElementById('foto-base64').value = "";
+            document.getElementById('preview-foto').classList.add('hidden');
+            document.getElementById('input-harga').value = "";
+            document.getElementById('input-keterangan').value = "";
+            document.getElementById('modal-form').classList.remove('hidden');
+        }
+
+        function bukaModalEdit(id) {
+            const item = localDbCache.find(i => i.id === id);
+            if(!item) return;
+            
+            document.getElementById('modal-title').innerText = "Edit Barang: " + item.kode;
+            document.getElementById('edit-id').value = item.id;
+            document.getElementById('foto-base64').value = item.foto;
+            
+            const preview = document.getElementById('preview-foto');
+            preview.src = item.foto;
+            preview.classList.remove('hidden');
+            
+            document.getElementById('input-kategori').value = item.kategori;
+            document.getElementById('input-jenis').value = item.jenis;
+            document.getElementById('input-harga').value = item.harga;
+            document.getElementById('input-keterangan').value = item.keterangan || "";
+            
+            document.getElementById('modal-form').classList.remove('hidden');
+        }
+
+        function tutupModalForm() {
+            document.getElementById('modal-form').classList.add('hidden');
         }
 
         function generateKode(kat, jenis) {
             const prefix = `${kat}-${jenis}-`;
-            const similarItems = db.filter(i => i.kode.startsWith(prefix));
-            const count = similarItems.length + 1;
-            return prefix + count.toString().padStart(3, '0');
+            const similarItems = localDbCache.filter(i => i.kode.startsWith(prefix));
+            let maxCount = 0;
+            similarItems.forEach(i => {
+                const num = parseInt(i.kode.split('-')[2]);
+                if(num > maxCount) maxCount = num;
+            });
+            return prefix + (maxCount + 1).toString().padStart(3, '0');
         }
 
         async function simpanBarang() {
+            const idEdit = document.getElementById('edit-id').value;
             const foto = document.getElementById('foto-base64').value;
             const kat = document.getElementById('input-kategori').value;
             const jenis = document.getElementById('input-jenis').value;
             const harga = document.getElementById('input-harga').value;
-            const keterangan = document.getElementById('input-keterangan').value;
+            const ket = document.getElementById('input-keterangan').value;
 
-            if(!foto || !harga) return showToast("Foto dan Harga wajib diisi!", "error");
+            if(!foto || !harga) return alert("Foto dan Harga wajib diisi!");
 
-            const kode = generateKode(kat, jenis);
-            
-            const newItem = {
-                id: Date.now(),
-                kode: kode,
-                kategori: kat,
-                jenis: jenis,
-                keterangan: keterangan || '-',
-                harga: parseInt(harga),
-                foto: foto,
-                status: 'Ready',
-                tanggal: new Date().toLocaleDateString('id-ID')
-            };
-
-            try {
-                // Simpan ke IndexedDB dulu
-                await saveToDB(newItem);
-                // Update in-memory
-                db.push(newItem);
-                
-                closeModalTambah();
-                updateSummary();
-                renderList();
-                showToast(`Barang tersimpan: ${kode}`, 'success');
-            } catch (e) {
-                showToast("Gagal menyimpan ke database lokal", "error");
-            }
-        }
-
-        // --- STREAMING_CHUNK:Edit Barang Logic ---
-        function closeEditModal() {
-            document.getElementById('modal-edit').classList.add('hidden');
-            document.getElementById('edit-input-foto').value = '';
-            currentEditId = null;
-        }
-
-        function editBarang(id) {
-            const item = db.find(i => i.id === id);
-            if(!item) return;
-
-            currentEditId = id;
-            document.getElementById('edit-foto-base64').value = item.foto;
-            document.getElementById('edit-preview-foto').src = item.foto;
-            document.getElementById('edit-preview-foto').classList.remove('hidden');
-            document.getElementById('edit-kategori').value = item.kategori;
-            document.getElementById('edit-jenis').value = item.jenis;
-            document.getElementById('edit-harga').value = item.harga;
-            document.getElementById('edit-keterangan').value = item.keterangan && item.keterangan !== '-' ? item.keterangan : '';
-            document.getElementById('edit-kode-title').innerText = item.kode;
-            document.getElementById('modal-edit').classList.remove('hidden');
-        }
-
-        function compressEditImage(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = function (e) {
-                const img = new Image();
-                img.src = e.target.result;
-                img.onload = function () {
-                    const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 800;
-                    const scaleSize = MAX_WIDTH / img.width;
-                    if (img.width > MAX_WIDTH) {
-                        canvas.width = MAX_WIDTH;
-                        canvas.height = img.height * scaleSize;
-                    } else {
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                    }
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    const base64 = canvas.toDataURL('image/jpeg', 0.8);
-                    document.getElementById('edit-foto-base64').value = base64;
-                    document.getElementById('edit-preview-foto').src = base64;
+            if(idEdit) {
+                // Proses Edit
+                const index = localDbCache.findIndex(i => i.id == idEdit);
+                if(index > -1) {
+                    let updatedItem = { ...localDbCache[index] };
+                    updatedItem.foto = foto;
+                    updatedItem.harga = parseInt(harga);
+                    updatedItem.keterangan = ket;
+                    // Note: Kategori/Jenis diedit tidak merubah kode agar history konsisten.
+                    
+                    await saveItemToDB(updatedItem, true);
+                    localDbCache[index] = updatedItem;
+                    alert("Perubahan berhasil disimpan.");
                 }
-            };
-        }
+            } else {
+                // Proses Tambah Baru
+                const kode = generateKode(kat, jenis);
+                const newItem = {
+                    id: Date.now(),
+                    kode: kode,
+                    kategori: kat,
+                    jenis: jenis,
+                    harga: parseInt(harga),
+                    keterangan: ket,
+                    foto: foto,
+                    status: 'Ready',
+                    tanggal: new Date().toLocaleDateString('id-ID')
+                };
 
-        async function updateDataBarang() {
-            if(!currentEditId) return;
-            
-            const foto = document.getElementById('edit-foto-base64').value;
-            const kat = document.getElementById('edit-kategori').value;
-            const jenis = document.getElementById('edit-jenis').value;
-            const harga = document.getElementById('edit-harga').value;
-            const keterangan = document.getElementById('edit-keterangan').value;
-
-            if(!foto || !harga) return showToast("Foto dan Harga wajib diisi!", "error");
-
-            const index = db.findIndex(i => i.id === currentEditId);
-            if(index !== -1) {
-                // Update properties
-                db[index].foto = foto;
-                db[index].kategori = kat;
-                db[index].jenis = jenis;
-                db[index].harga = parseInt(harga);
-                db[index].keterangan = keterangan || '-';
-                
-                try {
-                    await saveToDB(db[index]); // Save specific item to IndexedDB
-                    closeEditModal();
-                    updateSummary();
-                    renderList();
-                    showToast(`Update sukses: ${db[index].kode}`, 'success');
-                } catch(e) {
-                    showToast("Gagal update database", "error");
-                }
+                await saveItemToDB(newItem);
+                localDbCache.push(newItem);
+                alert(`Barang tersimpan dengan kode:\n${kode}`);
             }
+            
+            tutupModalForm();
+            refreshUI();
         }
 
         function renderList() {
@@ -662,44 +426,33 @@
             const container = document.getElementById('list-masuk');
             container.innerHTML = '';
             
-            let filteredDb = db.slice().reverse(); 
+            let filteredDb = localDbCache.slice().reverse();
             if(filter === 'ready') filteredDb = filteredDb.filter(i => i.status === 'Ready');
             if(filter === 'sold') filteredDb = filteredDb.filter(i => i.status === 'Terjual');
 
-            if(filteredDb.length === 0) {
-                container.innerHTML = `
-                    <div class="col-span-full flex flex-col items-center justify-center p-12 bg-white rounded-2xl border-2 border-dashed border-gray-200">
-                        <svg class="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
-                        <p class="text-gray-500 font-medium">Tidak ada barang ditemukan.</p>
-                    </div>`;
-                return;
-            }
-
             filteredDb.forEach(item => {
                 const isSold = item.status === 'Terjual';
-                const keteranganHtml = item.keterangan && item.keterangan !== '-' ? `<p class="text-xs text-gray-500 italic mt-1 line-clamp-2" title="${item.keterangan}">${item.keterangan}</p>` : '';
-
                 container.innerHTML += `
-                    <div class="flex flex-row sm:flex-col border border-gray-100 p-4 rounded-2xl bg-white shadow-sm hover:shadow-md transition-all group ${isSold ? 'opacity-60 grayscale-[40%]' : ''}">
-                        <div class="w-24 h-24 sm:w-full sm:h-48 flex-shrink-0 sm:mb-4 rounded-xl overflow-hidden border border-gray-100 bg-gray-50 relative">
-                            <img src="${item.foto}" class="w-full h-full object-cover transition-transform group-hover:scale-105" loading="lazy">
-                            <div class="absolute top-2 right-2 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider whitespace-nowrap shadow-sm ${isSold ? 'bg-gray-100 text-gray-600' : 'bg-[#B5FF4A] text-gray-900'}">
+                    <div class="flex flex-col bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition overflow-hidden ${isSold ? 'opacity-70 grayscale-[30%]' : ''}">
+                        <div class="relative h-48 bg-gray-100">
+                            <img src="${item.foto}" class="w-full h-full object-cover">
+                            <div class="absolute top-2 right-2 px-2 py-1 rounded text-xs font-bold shadow-sm ${isSold ? 'bg-red-500 text-white' : 'bg-accent text-gray-900'}">
                                 ${item.status}
                             </div>
-                            <button onclick="editBarang(${item.id})" class="absolute bottom-2 right-2 bg-white text-[#792C82] p-2 rounded-lg shadow-md hover:bg-gray-100 transition-colors z-10 transform hover:scale-110 active:scale-95" title="Edit Data">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                            </button>
                         </div>
-                        
-                        <div class="flex flex-col flex-1 min-w-0 ml-4 sm:ml-0 justify-between">
-                            <div>
-                                <p class="font-black text-[#792C82] tracking-wide text-lg truncate">${item.kode}</p>
-                                <p class="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">${item.kategori} &bull; ${item.jenis}</p>
-                                ${keteranganHtml}
+                        <div class="p-3">
+                            <div class="flex justify-between items-start mb-1">
+                                <div>
+                                    <p class="font-black text-lg text-primary">${item.kode}</p>
+                                    <p class="text-xs text-gray-500 font-semibold">${item.kategori} - ${item.jenis}</p>
+                                </div>
+                                <p class="text-sm font-bold bg-gray-100 px-2 py-1 rounded text-gray-800">${formatRupiah(item.harga)}</p>
                             </div>
-                            <div class="mt-3 sm:mt-4 pt-3 border-t border-gray-50 flex justify-between items-end">
-                                <p class="text-[10px] sm:text-xs text-gray-400">Input: ${item.tanggal}</p>
-                                <p class="text-base sm:text-lg font-bold text-gray-800 leading-none">${formatRupiah(item.harga)}</p>
+                            ${item.keterangan ? `<p class="text-xs text-gray-500 italic truncate mb-2">${item.keterangan}</p>` : '<div class="h-4 mb-2"></div>'}
+                            
+                            <div class="border-t pt-2 flex justify-between">
+                                <p class="text-[10px] text-gray-400">In: ${item.tanggal}</p>
+                                ${!isSold ? `<button onclick="bukaModalEdit(${item.id})" class="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1">✏️ Edit</button>` : `<p class="text-[10px] text-red-500 font-bold">Out: ${item.tanggal_terjual}</p>`}
                             </div>
                         </div>
                     </div>
@@ -707,39 +460,71 @@
             });
         }
 
-        // --- STREAMING_CHUNK:Barang Keluar & OCR Logic ---
+        // --- Fitur Barang Keluar (OCR, Autocomplete, Jual) ---
+        function showSuggestions(val) {
+            const container = document.getElementById('suggestions');
+            container.innerHTML = '';
+            val = val.toUpperCase().trim();
+            if (!val) {
+                container.classList.add('hidden');
+                return;
+            }
+            
+            // Filter hanya yang ready dan mirip dengan inputan
+            const matches = localDbCache.filter(i => i.status === 'Ready' && i.kode.includes(val));
+            
+            if (matches.length > 0) {
+                matches.forEach(m => {
+                    const div = document.createElement('div');
+                    div.className = 'p-3 border-b hover:bg-gray-100 cursor-pointer flex justify-between items-center transition';
+                    div.innerHTML = `
+                        <div>
+                            <span class="font-bold text-primary">${m.kode}</span>
+                            <span class="text-xs text-gray-500 ml-2">${m.jenis}</span>
+                        </div>
+                        <span class="text-xs font-bold">${formatRupiah(m.harga)}</span>
+                    `;
+                    div.onclick = () => {
+                        document.getElementById('manual-code').value = m.kode;
+                        container.classList.add('hidden');
+                        processCode(m.kode);
+                    };
+                    container.appendChild(div);
+                });
+                container.classList.remove('hidden');
+            } else {
+                container.innerHTML = '<div class="p-3 text-sm text-gray-500 text-center italic">Tidak ada stok ready yang cocok.</div>';
+                container.classList.remove('hidden');
+            }
+        }
+
+        // Tutup autocomplete jika klik di luar
+        document.addEventListener('click', function(e) {
+            if(e.target.id !== 'manual-code') {
+                document.getElementById('suggestions').classList.add('hidden');
+            }
+        });
+
         async function startCamera() {
             const video = document.getElementById('video-preview');
-            const overlay = document.getElementById('scanner-overlay');
-            const placeholder = document.getElementById('camera-placeholder');
-            
             try {
                 videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
                 video.srcObject = videoStream;
                 video.classList.remove('hidden');
-                overlay.classList.remove('hidden');
-                placeholder.classList.add('hidden');
-                
                 document.getElementById('btn-start-scan').classList.add('hidden');
                 document.getElementById('btn-capture').classList.remove('hidden');
-                document.getElementById('ocr-status').innerHTML = "Arahkan kamera ke label kode, lalu klik Proses.";
+                document.getElementById('ocr-status').innerText = "Arahkan ke kode, pastikan fokus, lalu Scan.";
             } catch (err) {
-                alert("Tidak dapat mengakses kamera. Pastikan menggunakan koneksi HTTPS atau Localhost.");
+                alert("Kamera tidak bisa diakses. Pastikan menggunakan link HTTPS (GitHub) atau localhost.");
             }
         }
 
         function stopCamera() {
-            const video = document.getElementById('video-preview');
-            const placeholder = document.getElementById('camera-placeholder');
-            
             if(videoStream) {
                 videoStream.getTracks().forEach(track => track.stop());
                 videoStream = null;
             }
-            video.classList.add('hidden');
-            document.getElementById('scanner-overlay').classList.add('hidden');
-            placeholder.classList.remove('hidden');
-            
+            document.getElementById('video-preview').classList.add('hidden');
             document.getElementById('btn-start-scan').classList.remove('hidden');
             document.getElementById('btn-capture').classList.add('hidden');
             document.getElementById('ocr-status').innerText = "";
@@ -748,20 +533,13 @@
         async function scanOCR() {
             const video = document.getElementById('video-preview');
             const statusText = document.getElementById('ocr-status');
-            const btnCapture = document.getElementById('btn-capture');
             
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            statusText.innerHTML = `<span class="animate-pulse text-[#792C82] font-semibold flex items-center justify-center gap-2">
-                <svg class="animate-spin h-4 w-4 text-[#792C82]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                Membaca gambar...
-            </span>`;
-            
-            btnCapture.disabled = true;
-            btnCapture.classList.add('opacity-50', 'cursor-not-allowed');
+            statusText.innerText = "⏳ Sedang membaca teks... mohon tunggu.";
             
             try {
                 const result = await Tesseract.recognize(canvas.toDataURL('image/jpeg'), 'eng');
@@ -770,111 +548,59 @@
                 const match = text.match(/(OR|TP)-[A-Z]{3}-\d{3}/i);
                 
                 if(match) {
-                    statusText.innerText = `Terdeteksi: ${match[0].toUpperCase()}`;
+                    statusText.innerText = `✅ Terbaca: ${match[0].toUpperCase()}`;
                     stopCamera();
                     processCode(match[0].toUpperCase());
                 } else {
-                    statusText.innerHTML = `<span class="text-red-500 font-medium">Kode tidak terdeteksi. Coba input manual.</span>`;
+                    statusText.innerText = "❌ Kode tidak ditemukan/buram. Coba input manual.";
                 }
             } catch (error) {
                 statusText.innerText = "Error memproses gambar.";
-            } finally {
-                btnCapture.disabled = false;
-                btnCapture.classList.remove('opacity-50', 'cursor-not-allowed');
             }
         }
-
-        // --- STREAMING_CHUNK:Autocomplete & Jual ---
-        function showSuggestions(val) {
-            const listContainer = document.getElementById('autocomplete-list');
-            listContainer.innerHTML = '';
-            
-            if (!val) {
-                listContainer.classList.add('hidden');
-                return;
-            }
-            
-            const upperVal = val.toUpperCase();
-            const matches = db.filter(item => item.kode.includes(upperVal) && item.status === 'Ready');
-            
-            if (matches.length === 0) {
-                listContainer.classList.add('hidden');
-                return;
-            }
-
-            matches.forEach(item => {
-                const div = document.createElement('div');
-                div.className = "p-3 hover:bg-gray-50 cursor-pointer text-sm text-left border-b border-gray-100 last:border-b-0 flex flex-col transition-colors";
-                const ketText = item.keterangan && item.keterangan !== '-' ? `<span class="text-xs text-gray-400 italic truncate ml-2">- ${item.keterangan}</span>` : '';
-                
-                div.innerHTML = `
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <span class="font-bold text-[#792C82] text-base">${item.kode}</span> 
-                            <span class="text-xs text-gray-500 ml-1 bg-gray-100 px-1.5 py-0.5 rounded">${item.jenis}</span>
-                        </div>
-                        <span class="font-semibold text-gray-700">${formatRupiah(item.harga)}</span>
-                    </div>
-                    ${ketText}
-                `;
-                
-                div.onclick = function() {
-                    document.getElementById('manual-code').value = item.kode;
-                    listContainer.classList.add('hidden');
-                    processCode(item.kode);
-                };
-                listContainer.appendChild(div);
-            });
-            listContainer.classList.remove('hidden');
-        }
-
-        document.addEventListener('click', function(e) {
-            if (e.target.id !== 'manual-code') {
-                document.getElementById('autocomplete-list')?.classList.add('hidden');
-            }
-        });
 
         function processCode(kodeInput) {
             if(!kodeInput) return;
-            const itemIndex = db.findIndex(i => i.kode === kodeInput);
+            const itemIndex = localDbCache.findIndex(i => i.kode === kodeInput);
             
             if(itemIndex === -1) {
-                showToast("Barang tidak ditemukan di database!", "error");
+                alert("Barang tidak ditemukan di database!");
                 return;
             }
             
-            const item = db[itemIndex];
+            const item = localDbCache[itemIndex];
             if(item.status === 'Terjual') {
-                showToast(`Kode ${item.kode} sudah berstatus TERJUAL!`, "error");
+                alert("Barang ini SUDAH TERJUAL sebelumnya!");
                 return;
             }
 
             document.getElementById('konfirm-foto').src = item.foto;
             document.getElementById('konfirm-kode').innerText = item.kode;
-            
-            const ketHtml = item.keterangan && item.keterangan !== '-' 
-                ? `<span class="block text-gray-500 italic mt-1">${item.keterangan}</span>` : '';
-                
             document.getElementById('konfirm-detail').innerHTML = `
-                <span class="font-semibold text-gray-700 text-lg">${item.kategori === 'OR' ? 'Stok Sendiri' : 'Titipan'} - ${item.jenis}</span>
-                ${ketHtml}
-                <span class="block mt-3 text-2xl font-black text-gray-800">${formatRupiah(item.harga)}</span>
+                <div class="flex justify-between border-b pb-1 mb-1">
+                    <span class="text-gray-500">Jenis</span>
+                    <span class="font-bold">${item.kategori} - ${item.jenis}</span>
+                </div>
+                <div class="flex justify-between border-b pb-1 mb-1">
+                    <span class="text-gray-500">Harga</span>
+                    <span class="font-bold text-accent bg-primary px-2 rounded">${formatRupiah(item.harga)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Keterangan</span>
+                    <span class="font-semibold text-right max-w-[150px] truncate">${item.keterangan || '-'}</span>
+                </div>
             `;
             
             document.getElementById('btn-konfirm-jual').onclick = async function() {
-                db[itemIndex].status = 'Terjual';
-                db[itemIndex].tanggal_terjual = new Date().toLocaleDateString('id-ID');
+                item.status = 'Terjual';
+                item.tanggal_terjual = new Date().toLocaleDateString('id-ID');
                 
-                try {
-                    await saveToDB(db[itemIndex]); // Update ke IndexedDB
-                    document.getElementById('modal-terjual').classList.add('hidden');
-                    document.getElementById('manual-code').value = ''; 
-                    updateSummary();
-                    renderKeluar();
-                    showToast(`Berhasil! ${item.kode} terjual.`);
-                } catch(e) {
-                    showToast("Gagal menyimpan ke database", "error");
-                }
+                await saveItemToDB(item, true); // Update db
+                localDbCache[itemIndex] = item; // Update cache array
+                
+                document.getElementById('modal-terjual').classList.add('hidden');
+                document.getElementById('manual-code').value = '';
+                refreshUI();
             };
             
             document.getElementById('modal-terjual').classList.remove('hidden');
@@ -883,109 +609,101 @@
         function renderKeluar() {
             const container = document.getElementById('list-keluar');
             container.innerHTML = '';
-            const soldItems = db.filter(i => i.status === 'Terjual').reverse();
+            const soldItems = localDbCache.filter(i => i.status === 'Terjual').reverse();
             
             if(soldItems.length === 0) {
-                container.innerHTML = `
-                    <div class="col-span-full flex flex-col items-center justify-center p-8 bg-white rounded-2xl border border-dashed border-gray-200">
-                        <p class="text-gray-400 font-medium">Belum ada riwayat barang keluar.</p>
-                    </div>`;
+                container.innerHTML = '<p class="text-gray-400 col-span-full text-center py-10">Belum ada barang terjual.</p>';
                 return;
             }
 
             soldItems.forEach(item => {
                 container.innerHTML += `
-                    <div class="flex items-center border border-gray-100 p-3 sm:p-4 rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow">
-                        <img src="${item.foto}" class="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg mr-4 border border-gray-100 bg-gray-50">
-                        <div class="flex-1 min-w-0">
-                            <div class="flex justify-between items-start mb-1">
-                                <p class="font-black text-gray-800 text-base sm:text-lg">${item.kode}</p>
-                                <span class="bg-[#B5FF4A] text-gray-900 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded">TERJUAL</span>
-                            </div>
-                            <p class="text-xs text-gray-500 truncate mb-1">${item.kategori} - ${item.jenis}</p>
-                            <div class="flex justify-between items-end mt-2">
-                                <p class="text-[11px] text-gray-400 font-medium"><span class="text-[#792C82] font-semibold">${item.tanggal_terjual}</span></p>
-                                <div class="text-sm sm:text-base font-bold text-gray-800">${formatRupiah(item.harga)}</div>
-                            </div>
+                    <div class="flex bg-white p-3 rounded-xl shadow-sm border border-gray-100 items-center">
+                        <img src="${item.foto}" class="w-16 h-16 object-cover rounded-lg mr-4 border border-gray-100">
+                        <div class="flex-1">
+                            <p class="font-bold text-primary text-lg leading-tight">${item.kode}</p>
+                            <p class="text-xs text-gray-500 font-semibold mb-1">${item.kategori}</p>
+                            <p class="text-[10px] text-gray-400">Trj: ${item.tanggal_terjual}</p>
+                        </div>
+                        <div class="text-sm font-black bg-primary/10 text-primary px-3 py-2 rounded-lg">
+                            ${formatRupiah(item.harga)}
                         </div>
                     </div>
                 `;
             });
         }
 
-        // --- STREAMING_CHUNK:Export & Import ---
+        // --- Fitur Export & Backup ---
         async function exportToExcel() {
-            if(db.length === 0) return showToast("Database masih kosong!", "error");
+            if(localDbCache.length === 0) return alert("Database kosong!");
             
-            showToast("Menyiapkan file Excel...", "success");
             const workbook = new ExcelJS.Workbook();
             const worksheet = workbook.addWorksheet('Database Barang');
 
             worksheet.columns = [
                 { header: 'No', key: 'no', width: 5 },
-                { header: 'Foto Barang', key: 'foto', width: 22 },
-                { header: 'Kode Barang', key: 'kode', width: 18 },
-                { header: 'Kategori', key: 'kategori', width: 12 },
-                { header: 'Jenis', key: 'jenis', width: 15 },
-                { header: 'Keterangan', key: 'keterangan', width: 30 },
-                { header: 'Harga', key: 'harga', width: 18 },
-                { header: 'Status', key: 'status', width: 15 },
+                { header: 'Foto Barang', key: 'foto', width: 15 },
+                { header: 'Kode', key: 'kode', width: 15 },
+                { header: 'Kategori', key: 'kategori', width: 10 },
+                { header: 'Jenis', key: 'jenis', width: 12 },
+                { header: 'Harga', key: 'harga', width: 15 },
+                { header: 'Keterangan', key: 'keterangan', width: 25 },
+                { header: 'Status', key: 'status', width: 12 },
                 { header: 'Tgl Input', key: 'tanggal', width: 15 },
                 { header: 'Tgl Terjual', key: 'tanggal_terjual', width: 15 }
             ];
 
-            const headerRow = worksheet.getRow(1);
-            headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-            headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
-            headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF792C82' } };
+            worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            worksheet.getRow(1).fill = { type: 'pattern', pattern:'solid', fgColor:{ argb:'FF792C82' } };
+            worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
 
-            for(let i = 0; i < db.length; i++) {
-                let item = db[i];
+            for(let i = 0; i < localDbCache.length; i++) {
+                let item = localDbCache[i];
                 let row = worksheet.addRow({
                     no: i + 1,
                     kode: item.kode,
                     kategori: item.kategori,
                     jenis: item.jenis,
-                    keterangan: item.keterangan || '-',
                     harga: item.harga,
+                    keterangan: item.keterangan || '-',
                     status: item.status,
                     tanggal: item.tanggal,
                     tanggal_terjual: item.tanggal_terjual || '-'
                 });
 
-                row.height = 90; 
-                row.getCell('harga').numFmt = '"Rp"#,##0;[Red]\-"Rp"#,##0';
+                row.height = 70;
 
                 if(item.foto) {
                     try {
                         const base64Data = item.foto.split(',')[1];
-                        const extension = item.foto.substring("data:image/".length, item.foto.indexOf(";base64"));
-                        const imageId = workbook.addImage({ base64: base64Data, extension: extension });
-                        worksheet.addImage(imageId, { tl: { col: 1, row: i + 1 }, ext: { width: 110, height: 110 }, editAs: 'oneCell' });
-                    } catch (e) {
-                        console.error("Gagal export gambar", e);
-                    }
+                        const ext = item.foto.substring("data:image/".length, item.foto.indexOf(";base64"));
+                        const imageId = workbook.addImage({ base64: base64Data, extension: ext });
+                        
+                        worksheet.addImage(imageId, {
+                            tl: { col: 1, row: i + 1 },
+                            ext: { width: 80, height: 80 },
+                            editAs: 'oneCell'
+                        });
+                    } catch (e) { console.error(e); }
                 }
-                
                 row.alignment = { vertical: 'middle', horizontal: 'center' };
-                row.getCell('keterangan').alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+                row.getCell('keterangan').alignment = { wrapText: true, vertical: 'middle', horizontal: 'left' };
             }
 
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            saveAs(blob, `Database_Aual_Stock_${new Date().toISOString().split('T')[0]}.xlsx`);
+            saveAs(blob, "Database_Aual_Stock.xlsx");
         }
 
         function backupJSON() {
-            if(db.length === 0) return showToast("Belum ada data untuk di-backup!", "error");
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
-            const downloadAnchorNode = document.createElement('a');
-            downloadAnchorNode.setAttribute("href", dataStr);
-            downloadAnchorNode.setAttribute("download", `Backup_Aual_Stock_${new Date().toISOString().split('T')[0]}.json`);
-            document.body.appendChild(downloadAnchorNode);
-            downloadAnchorNode.click();
-            downloadAnchorNode.remove();
-            showToast("File backup berhasil didownload.");
+            if(localDbCache.length === 0) return alert("Belum ada data untuk dibackup!");
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(localDbCache));
+            const dlAnchorNode = document.createElement('a');
+            dlAnchorNode.setAttribute("href", dataStr);
+            dlAnchorNode.setAttribute("download", "backup_aual_stock.json");
+            document.body.appendChild(dlAnchorNode);
+            dlAnchorNode.click();
+            dlAnchorNode.remove();
         }
 
         function importJSON(event) {
@@ -995,33 +713,23 @@
             reader.onload = async function(e) {
                 try {
                     const importedDb = JSON.parse(e.target.result);
-                    if(confirm("PERHATIAN: Data di perangkat ini akan DITIMPA sepenuhnya. Lanjutkan?")) {
-                        
-                        document.getElementById('loading-screen').style.display = 'flex';
-                        
-                        await clearDB(); // Bersihkan DB lama
-                        await bulkSaveToDB(importedDb); // Simpan semua secara massal
-                        db = importedDb; // Update memory
-                        
-                        updateSummary();
-                        
-                        if(document.getElementById('content-masuk').classList.contains('hidden')) {
-                            renderKeluar();
-                        } else {
-                            renderList();
+                    if(confirm("AWAS: Data saat ini akan DITIMPA total oleh file backup. Lanjutkan?")) {
+                        await clearAllDB();
+                        for (const item of importedDb) {
+                            await saveItemToDB(item);
                         }
-                        
-                        document.getElementById('loading-screen').style.display = 'none';
-                        showToast("Data berhasil di-import dan disinkronisasi!");
+                        localDbCache = importedDb;
+                        refreshUI();
+                        alert("Restore data berhasil!");
                     }
                 } catch (error) {
-                    document.getElementById('loading-screen').style.display = 'none';
-                    showToast("File tidak valid. Pastikan file berextensi .json", "error");
+                    alert("File tidak valid atau rusak.");
                 }
-                event.target.value = ""; 
+                event.target.value = "";
             };
             reader.readAsText(file);
         }
+
     </script>
 </body>
 </html>
